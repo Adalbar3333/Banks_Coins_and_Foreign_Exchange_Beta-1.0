@@ -56,6 +56,30 @@ forigenCoins = load_yaml(ch.cvars.get("forigenCoins",forigenCoinsStandard))
 ch.set_cvar_nx("forigenCoins",dump_json(forigenCoinsStandard))
 ch.set_cvar_nx("bags",dump_json(bags))
 
+#sets up
+updateOkay=False
+serverCoin = []
+for coin,rate in serverSettings.exchangeRates.items():
+  serverCoin.append(coin)
+yourCoin = []
+for coin in forigenCoins:
+  yourCoin.append(coin[0])
+yourCoin.pop(0)
+#Removes if not supposed to be there
+i = 0
+for x in yourCoin:
+  if x not in serverCoin and x != "currentCoins":
+    updateOkay=True
+  else:
+    i=i+1
+# Adds if not there
+for x in serverCoin:
+  if x not in yourCoin and yourCoin != "currentCoins":
+    newCoin = standardPouch.replace('Coin Pouch',x)
+    forigenCoins.append(load_json(newCoin))
+    updateOkay=True
+forigenCoins[0] = ["currentCoins",f"{serverCoin[0]}"]
+
 if not a or A.get("view",A.get("v")):
   coins = None 
   for coinsIndex,bag in enumerate(bags):
@@ -64,24 +88,29 @@ if not a or A.get("view",A.get("v")):
       break 
   coins = coins[1]
   coinsDisp=str(coins).strip("}{").replace("'","").replace(",","\n")
-  
   curCoins = None
+
   for i,pouch in enumerate(forigenCoins):
     if pouch[0] == "currentCoins":
       curCoins = pouch[1]
     if pouch[0] == curCoins:
       break
+  forigenCoins[i][1].update(coins)
+  character().set_cvar("forigenCoins",dump_json(forigenCoins))
+
   text = f''' -title "{name} Checks their Coin Purse!"'''
   text += f''' -f "Current Pouch - {curCoins}|{coinsDisp}"'''
   if A.get("view",A.get("v")):
     forigenCoinsDisp = ""
-    for i,country in enumerate(forigenCoins):
+    for i,country in enumerate(load_json(forigenCoins)):
       if str(country[0]) == "currentCoins" or str(country[0]) == curCoins:
         cd = ""
       else:
         cd=str(country[1]).strip("}{").replace("'","").replace(","," |")
         forigenCoinsDisp += f''' -f "{country[0]}|{cd}"'''
     text += forigenCoinsDisp
+  if updateOkay:
+    text += f''' -f "We have updated your Coins in some way!"'''
   text += f''' -footer "@Adalbär#3333 | `{ctx.prefix}{ctx.alias} view` | `{ctx.prefix}{ctx.alias} +/-#`" -thumb <image> -color <color>'''
   return text
 
@@ -134,6 +163,8 @@ character().set_cvar("forigenCoins",dump_json(forigenCoins))
 text = f''' -title "{name} {'adds' if adding else 'removes'} some coin from their {curCoins} Coin Pouch!"'''
 text += f''' -desc "{name} {'adds' if adding else 'removes'} {nca+ct}!"'''
 text += f''' -f "Current Coins - {curCoins} Coin Pouch|{coinsDisp}"'''
+if updateOkay:
+  text += f''' -f "We have updated your Coins in some way!"'''
 text += f''' -footer "@Adalbär#3333 | `{ctx.prefix}{ctx.alias} +/-#` | `{ctx.prefix}{ctx.alias} view`" -thumb <image> -color <color>'''
 return text 
 </drac2>

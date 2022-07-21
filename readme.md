@@ -2,4 +2,8 @@ Have you ever wanted to make your coins more active and versitile to where you c
 
 Here is every tool you could need for it! 
 
+Version = Beta 1.0
+
+I have finished all related alias' and subalias' for `!coins` to work! Please head over to this [github](https://github.com/Adalbar3333/Banks_Coins_and_Foreign_Exchange_Beta-1.0) and report any bugs, or features you would like to see!
+
 Because of the nature of this alias, we will **NOT** be using the built-in command for coins `!game coins`. 

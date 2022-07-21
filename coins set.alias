@@ -1,0 +1,74 @@
+embed
+<drac2>
+a = &ARGS&
+A = argparse(a)
+ch = character()
+n = "/n"
+
+settings = f""" 
+---
+coinRates:
+  cp: 100
+  sp: 10
+  ep: 2
+  gp: 1
+  pp: 0.1
+exchangeRates:
+  Country One: 1
+  Country Two: 1.25
+  Country Three: 0.85
+dungeonMaster:
+- None
+"""
+
+serverSettings = load_yaml(get_svar("coinsSettings", settings))
+
+standardPouch = '''["Coin Pouch",{"cp": 0,"sp": 0,"ep": 0,"gp": 0,"pp": 0}]'''
+forigenCoinsStandard = []
+first = None
+for i,x in enumerate(serverSettings.exchangeRates.items()):
+  if i == 0:
+    first = x[0]
+holder = f'''["currentCoins","{first}"]'''
+forigenCoinsStandard.append(load_yaml(holder))
+for country,rate in serverSettings.exchangeRates.items():
+  toAppend = str(standardPouch.replace("Coin Pouch",country))
+  forigenCoinsStandard.append(load_yaml(toAppend))
+
+bags = load_yaml(ch.cvars.get("bags",standardPouch))
+forigenCoins = load_yaml(ch.cvars.get("forigenCoins",forigenCoinsStandard))
+ch.set_cvar_nx("forigenCoins",dump_json(forigenCoinsStandard))
+ch.set_cvar_nx("bags",dump_json(bags))
+
+if not A:
+	listF = ""
+	for country in forigenCoins:
+		if country[0] == "currentCoins":
+			listF += ""
+		else:
+			listF += f"{country[0]}, "
+
+	err(f"""We need a countries currency to change it to. {n}Here is what you can change your pouches to: {listF}""")
+chosen = None
+for i,country in enumerate(forigenCoins):
+	if A.get(country[0]) or "&1&".lower() in country[0].lower():
+		chosen = forigenCoins[i]
+prepare = load_yaml(str(chosen).replace(chosen[0],"Coin Pouch"))
+forigenCoins[0]=(["currentCoins",chosen])
+for i,bag in enumerate(bags):
+	if bag[0] == "Coin Pouch":
+		bags.pop(i)
+		break
+bags.append(prepare)
+ch.set_cvar("bags",dump_json(bags))
+ch.set_cvar("forigenCoins",dump_json(forigenCoins))
+
+coins = chosen[1]
+coinsDisp=str(coins).strip("}{").replace("'","").replace(",","\n")
+
+text = f""" -title "{name} pulls out their {chosen[0]} coins!" """
+text += f""" -desc "{name} is now using {chosen[0]} coins for trade." """
+text += f''' -f "Current Coins - {chosen[0]} Coins|{coinsDisp}"'''
+text += f''' -footer "@Adalbär#333 | {ctx.prefix}{ctx.alias} set Country" -color <color> -thumb <thumb>'''
+return text 
+</drac2>

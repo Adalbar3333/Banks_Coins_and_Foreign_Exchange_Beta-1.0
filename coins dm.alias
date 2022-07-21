@@ -1,0 +1,114 @@
+multiline
+<drac2>
+a = &ARGS&
+A = argparse(a)
+ch = character()
+n = "/n"
+
+settings = f""" 
+---
+coinRates:
+  cp: 100
+  sp: 10
+  ep: 2
+  gp: 1
+  pp: 0.1
+exchangeRates:
+  Country One: 1
+  Country Two: 1.25
+  Country Three: 0.85
+dungeonMaster:
+- None
+"""
+
+serverSettings = load_yaml(get_svar("coinsSettings", settings))
+
+dm = False
+if ctx.author.id in serverSettings.dungeonMaster or "None" in serverSettings.dungeonMaster:
+  dm = True
+
+if not a or A.get("help",A.get("h")):
+  text = f''' -title "{ctx.author} checks how to DM the coins!"'''
+  text += f''' -desc "Here are all the things you can do with this subalias as well as a description of how everything works!"'''
+  text += f''' -f "What is this?|This alias allows you to set up different currencies in your world as well as different rates between each coutries. You can see more by looking around the alias, however, here is a simple rundown.\n`{ctx.prefix}{ctx.alias} +/-#` adds or removes coin from your CURRENT coin purse. You can also add specific types of coins via adding the type at the end `sp = Silver Pieces`\n`{ctx.prefix}{ctx.alias} set 'Country'` will switch your current pouch to be the selected countries.\n`{ctx.prefix}{ctx.alias} rates` will show you all the rates of each country compared to your current pouche's rates." '''
+  text += f''' -f "Set Settings| You can set your server settings to match the default by running `{ctx.prefix}{ctx.alias} dm setup`."'''
+  text += f''' -f "Adding and Removing new country| `{ctx.prefix}{ctx.alias} dm add -country 'country' -rate 'rate'` will add a new country by the name and rate you supply. If you run it, and already have a country by that name, it will just update the rate. `{ctx.prefix}{ctx.alias} dm remove -country 'country'` will remove the defined country."'''
+  text += f''' -f "Update Rates |`{ctx.prefix}{ctx.alias} dm rate -country 'country' -rate 'rate'` is designed to update the rate, but looks for things differently, not updating but replacing the number only."'''
+  text += f''' -f "Adding or Removing DM's to view and edit this list|Just being able to edit an SVAR is not enough here! You'll also need to be registerd by someone who can edit it. You can add another DM to the list via `{ctx.prefix}{ctx.alias} dm addDm 'userID'`. Remove one via `{ctx.prefix}{ctx.alias} dm removeDm 'userID'`. You __MUST__ add their ID, otherwise it will not work."'''
+  return f'''{ctx.prefix}embed {text}'''
+if A.get("setup") and ctx.guild:
+  settings = load_yaml(settings)
+  if get_svar('coinsSettings') and not A.get('confirm'):
+    err(f"You already have a settings on your server! If you want to proceed anyway, do `{ctx.prefix+ctx.alias} dm setup confirm`.")
+  settings.dungeonMaster.pop(0)
+  settings.dungeonMaster.append(ctx.author.id)
+  newSvar = f'''!svar coinsSettings {dump_yaml(settings)}'''
+  text = f''' -title "Your server now has the following setting set for Coins"'''
+  text += f''' -desc "To see the raw settings, check `!svar coinsSettings`\n\n```yaml\n{dump_yaml(settings)}```"'''
+  text += f''' -footer "@Adalbär#3333 | {ctx.prefix}{ctx.alias} dm setup" -thumb <image> -color <color>'''
+  return f'''{newSvar}\n!embed {text}'''
+elif not ctx.guild:
+  err("Sorry! You are not in a server! Please go into a server and do this command!")
+if A.get("add") and A.get('country') and A.get('rate'):
+  newCountry = {A.last('country'):A.last('rate', type_=float)}
+  serverSettings.exchangeRates.update(newCountry)
+  newSvar = f'''!svar coinsSettings {dump_yaml(serverSettings)}'''
+  text = f''' -title "{ctx.author} adds a new set of Coins!"'''
+  text += f''' -desc "{ctx.author} has added {A.last('country')} as a set of coins with an economic rate of {A.last('rate')}!"'''
+  text += f''' -f "Updated Server Coin Settings|```yaml\n{dump_yaml(serverSettings.exchangeRates)}```"'''
+  text += f''' -footer "@Adalbär#3333 | {ctx.prefix}{ctx.alias} dm add -country" -thumb <image> -color <color>'''
+  return f'''{newSvar}\n!embed {text}'''
+if A.get('remove') and A.get('country'):
+  removeType = None
+  for coin,rate in serverSettings.exchangeRates.items():
+    if A.last('country').lower() in coin.lower():
+      removeType = coin
+  serverSettings.exchangeRates.pop(removeType)
+  newSvar = f'''!svar coinsSettings {dump_yaml(serverSettings)}'''
+  text = f''' -title "{ctx.author} removes a set of Coins!"'''
+  text += f''' -desc "{ctx.author} removes the {removeType} coin set from the server!"'''
+  text += f''' -f "Updated Server Coin Settings!|```yaml\n{serverSettings}```"'''
+  return f'''{newSvar}\n{ctx.prefix}embed {text}'''
+if A.get("rate"):
+  editCountry = None
+  for coin,rate in serverSettings.exchangeRates.items():
+    if A.last('country').lower() in coin.lower():
+      editCountry = {coin:A.last('rate',type_=float)}
+  serverSettings.exchangeRates.update(editCountry)
+  newSvar = f'''!svar coinsSettings {dump_yaml(serverSettings)}'''
+  text = f''' -title "{ctx.author} adds a new set of Coins!"'''
+  text += f''' -desc "{ctx.author} has added {A.last('country')} as a set of coins with an economic rate of {A.last('rate')}!"'''
+  text += f''' -f "Updated Server Coin Settings|```py\n{dump_yaml(serverSettings.exchangeRates)}```"'''
+  text += f''' -footer "@Adalbär#3333 | {ctx.prefix}{ctx.alias} dm add -country" -thumb <image> -color <color>'''
+  return f'''{newSvar}\n{ctx.prefix}embed {text}'''
+if A.get("addDm",A.get('add')):
+  newDm = int(a[len(a)-1])
+  if typeof(newDm) != 'int':
+    err(f"That is not an ID! Please try again! Here is what your ID looks like: {ctx.author.id}")
+  if "None" in serverSettings.dungeonMaster:
+    serverSettings.dungeonMaster.pop(0)
+  serverSettings.dungeonMaster.append(int(newDm))
+  newSvar = f'''!svar coinsSettings {dump_yaml(serverSettings)}'''
+  text = f''' -title "{ctx.author} adds <@{newDm}> as a DM for the server Coins!"'''
+  text += f''' -desc "<@{newDm}> can now add new coin sets to the server!"'''
+  text += f''' -f "Updated Server Coin Settings|```yaml\n{dump_yaml(serverSettings)}```"'''
+  return f'''{newSvar}\n{ctx.prefix}embed {text}'''
+if A.get("removeDm",A.get('remove')):
+  removeDm = int(a[len(a)-1])
+  if typeof(removeDm) != 'int':
+    err(f"That is not an ID! Please try again! Here is what your ID looks like: {ctx.author.id}")
+  for i,x in enumerate(serverSettings.dungeonMaster):
+    if int(x) == int(removeDm):
+      break
+    else:
+      err(f"There is not a <@{removeDm}> in our records!")
+  serverSettings.dungeonMaster.pop(i)
+  newSvar = f'''{ctx.prefix}svar coinsSettings {dump_yaml(serverSettings)}'''
+  text = f''' -title "{ctx.author} removes <@{removeDm}> as a DM!"'''
+  text += f''' -desc "<@{removeDm}> is no longer able to add new coin sets!"'''
+  text += f''' -f "Updated Server Coin Settings|```yaml\n{dump_yaml(serverSettings)}```"'''
+  return f'''{newSvar}\n{ctx.prefix}embed {text}'''
+err("You should not be seeing this!")
+
+</drac2>
+

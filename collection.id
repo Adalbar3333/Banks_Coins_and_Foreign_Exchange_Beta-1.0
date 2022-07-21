@@ -1,0 +1,19 @@
+{
+  "name": "Banks, Coins and Foreign Exchange (Beta 1.0)", 
+  "snippets": {}, 
+  "collection": "62d631069eba7569c3f5aa85", 
+  "aliases": {
+    "bank open": "62d636849eba7569c3f5aa8d", 
+    "coins rates": "62d634835f641f4fd7259c27", 
+    "coins dm": "62d631ef9eba7569c3f5aa88", 
+    "bank exchange": "62d637cb5f641f4fd7259c2a", 
+    "bank loan": "62d6364b9eba7569c3f5aa8c", 
+    "bank": "62d6316e9eba7569c3f5aa87", 
+    "bank deposit": "62d636f75f641f4fd7259c28", 
+    "coins set": "62d6333d9eba7569c3f5aa8a", 
+    "bank view": "62d638065f641f4fd7259c2b", 
+    "bank withdraw": "62d6372f5f641f4fd7259c29", 
+    "bank close": "62d636b49eba7569c3f5aa8e", 
+    "coins": "62d631379eba7569c3f5aa86"
+  }
+}

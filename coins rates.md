@@ -1,0 +1,1 @@
+Shows you the rates between your current country's coins, and others. If you define two countries, you can see the direct exchange.

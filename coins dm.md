@@ -1,0 +1,1 @@
+Allows for DM things to take place such as setting coin rates and country coin names. 

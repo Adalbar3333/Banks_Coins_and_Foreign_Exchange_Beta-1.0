@@ -1,0 +1,1 @@
+Set your currency to be that of the added country. If you already have coins set up this way, it will exchange all of your money from your current country to the one you set it to. 

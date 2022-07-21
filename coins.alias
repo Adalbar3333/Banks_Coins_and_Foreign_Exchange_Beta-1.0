@@ -1,0 +1,139 @@
+embed 
+<drac2>
+a = &ARGS&
+A = argparse(a)
+ch = character()
+n = "/n"
+
+settings = f""" 
+---
+coinRates:
+  cp: 100
+  sp: 10
+  ep: 2
+  gp: 1
+  pp: 0.1
+exchangeRates:
+  Country One: 1
+  Country Two: 1.25
+  Country Three: 0.85
+dungeonMaster:
+- None
+"""
+
+serverSettings = load_yaml(get_svar("coinsSettings", settings))
+
+adding = True if "+" in str(a) else False
+subtracting = True if "-" in str(a) else False
+
+coinType = None
+standard = None
+for CT,CR in serverSettings.coinRates.items():
+  if CT == "&2&":
+    coinType = CT
+    break
+  if CR == 1.0:
+    standard = CT
+if not coinType and standard:
+  coinType = standard
+elif not coinType and not standard: 
+  errText = f"Sorry, but it seems like your server's coin settings are wrong, or we dont have a coin type by {'&2&'}"
+  err(errText)
+standardPouch = '''["Coin Pouch",{"cp": 0,"sp": 0,"ep": 0,"gp": 0,"pp": 0}]'''
+forigenCoinsStandard = []
+first = None
+for i,x in enumerate(serverSettings.exchangeRates.items()):
+  if i == 0:
+    first = x[0]
+holder = f'''["currentCoins","{first}"]'''
+forigenCoinsStandard.append(load_yaml(holder))
+for country,rate in serverSettings.exchangeRates.items():
+  toAppend = str(standardPouch.replace("Coin Pouch",country))
+  forigenCoinsStandard.append(load_yaml(toAppend))
+
+bags = load_yaml(ch.cvars.get("bags",standardPouch))
+forigenCoins = load_yaml(ch.cvars.get("forigenCoins",forigenCoinsStandard))
+ch.set_cvar_nx("forigenCoins",dump_json(forigenCoinsStandard))
+ch.set_cvar_nx("bags",dump_json(bags))
+
+if not a or A.get("view",A.get("v")):
+  coins = None 
+  for coinsIndex,bag in enumerate(bags):
+    if "Coin" in bag[0]:
+      coins = bag
+      break 
+  coins = coins[1]
+  coinsDisp=str(coins).strip("}{").replace("'","").replace(",","\n")
+  
+  curCoins = None
+  for i,pouch in enumerate(forigenCoins):
+    if pouch[0] == "currentCoins":
+      curCoins = pouch[1]
+    if pouch[0] == curCoins:
+      break
+  text = f''' -title "{name} Checks their Coin Purse!"'''
+  text += f''' -f "Current Pouch - {curCoins}|{coinsDisp}"'''
+  if A.get("view",A.get("v")):
+    forigenCoinsDisp = ""
+    for i,country in enumerate(forigenCoins):
+      if str(country[0]) == "currentCoins" or str(country[0]) == curCoins:
+        cd = ""
+      else:
+        cd=str(country[1]).strip("}{").replace("'","").replace(","," |")
+        forigenCoinsDisp += f''' -f "{country[0]}|{cd}"'''
+    text += forigenCoinsDisp
+  text += f''' -footer "@Adalbär#3333 | `{ctx.prefix}{ctx.alias} view` | `{ctx.prefix}{ctx.alias} +/-#`" -thumb <image> -color <color>'''
+  return text
+
+
+coins = None 
+for coinsIndex,bag in enumerate(bags):
+  if "Coin" in bag[0]:
+    coins = bag
+    break 
+
+curCoins = None
+for i,pouch in enumerate(forigenCoins):
+  if pouch[0] == "currentCoins":
+    curCoins = pouch[1]
+  if pouch[0] == curCoins:
+    break
+
+ct = coinType 
+nca = "&1&"
+oldCoins = coins
+coins = coins[1]
+ct = coinType
+nca = "&1&".strip("+")
+coins.update({ct:(coins[ct])+(int(nca) if int(nca) >= 1 else int(nca))})
+coinTypes = list(serverSettings.coinRates)
+for coin in coinTypes[:-1]: # for each coin type except for the last one
+  larger = coinTypes[coinTypes.index(coin)+1] # get the coin type that is one larger (cp -> sp, etc)
+  rate = int(serverSettings.coinRates[coin]/serverSettings.coinRates[larger]) # find the rate between the current coin and the larger coin. (cp/sp = 100/10=10)
+  p = coins[coin]//rate # find the new value by dividing the current amount of coins by the rate
+  if coins[coin] < 0: # if our coin subtraction brought this coin type below 0 coins:
+    coins.update( # Update our coin pouch
+    {
+      larger:coins[larger]+p, # Subtract the new value to the larger coin type (since p is negative)
+      coin:coins[coin]-p*rate # Add the new value multiplied by the rate to the smaller coin type
+    } 
+    )
+coinsOk=True if int(coins[ct])>=int(nca) else False
+coinsDisp=str(coins).strip("}{").replace("'","").replace(",","\n")
+if not coinsOk:
+  text = f''' -title "{name} does not have the coin!" -desc "Sorry, but you do not have {nca}{ct} to remove." -f "{curCoins} Coins|{oldCoins}"'''
+  return text
+
+# Updates current Coin Pouch
+bags[coinsIndex][1].update(coins)
+character().set_cvar("bags",dump_json(bags))
+# Updates stored forigen coins to match
+forigenCoins[i][1].update(coins)
+character().set_cvar("forigenCoins",dump_json(forigenCoins))
+
+text = f''' -title "{name} {'adds' if adding else 'removes'} some coin from their {curCoins} Coin Pouch!"'''
+text += f''' -desc "{name} {'adds' if adding else 'removes'} {nca+ct}!"'''
+text += f''' -f "Current Coins - {curCoins} Coin Pouch|{coinsDisp}"'''
+text += f''' -footer "@Adalbär#3333 | `{ctx.prefix}{ctx.alias} +/-#` | `{ctx.prefix}{ctx.alias} view`" -thumb <image> -color <color>'''
+return text 
+</drac2>

@@ -1,0 +1,63 @@
+embed
+<drac2>
+a = &ARGS&
+A = argparse(a)
+ch = character()
+n = "/n"
+
+settings = f""" 
+---
+coinRates:
+  cp: 100
+  sp: 10
+  ep: 2
+  gp: 1
+  pp: 0.1
+exchangeRates:
+  Country One: 1
+  Country Two: 1.25
+  Country Three: 0.85
+dungeonMaster:
+- None
+"""
+
+serverSettings = load_yaml(get_svar("coinsSettings", settings))
+
+standardPouch = '''["Coin Pouch",{"cp": 0,"sp": 0,"ep": 0,"gp": 0,"pp": 0}]'''
+forigenCoinsStandard = []
+first = None
+for i,x in enumerate(serverSettings.exchangeRates.items()):
+  if i == 0:
+    first = x[0]
+holder = f'''["currentCoins","{first}"]'''
+forigenCoinsStandard.append(load_yaml(holder))
+for country,rate in serverSettings.exchangeRates.items():
+  toAppend = str(standardPouch.replace("Coin Pouch",country))
+  forigenCoinsStandard.append(load_yaml(toAppend))
+
+bags = load_yaml(ch.cvars.get("bags",standardPouch))
+forigenCoins = load_yaml(ch.cvars.get("forigenCoins",forigenCoinsStandard))
+ch.set_cvar_nx("forigenCoins",dump_json(forigenCoinsStandard))
+ch.set_cvar_nx("bags",dump_json(bags))
+
+curCoins = None
+for i,x in enumerate(forigenCoins):
+  if x[0] == "currentCoins":
+    curCoins = x[1]
+    break
+if not a:
+  curRate = serverSettings.exchangeRates[curCoins]
+  rateDisplay = f"Current Rates|"
+  for country,rate in serverSettings.exchangeRates.items():
+    if country == curCoins[0]:
+      insert = ""
+    else:
+      insert = f"{rate} __<-__ {curCoins}:{curRate}" if rate>curRate else f"{rate} __->__ {curCoins}:{curRate}" if rate<curRate else f"{rate} __<>__ {curCoins}:{curRate}"
+      rateDisplay += f"""{country}:{insert}\n"""
+  text = f''' -title "{name} checks the economy of other countries!"'''
+  text += f''' -desc "How to understand: This shows you which countries coin is worth more; your currently active coins, or the coin it is compared to. The `->/<-` directs you to the one that is worth more, and `<>` signifies that they are worth the same. It will also show you what their gold coin is worth. \n\nThe universal Gold Coin is 1. The rates are based around the universal 1 gold coin."'''
+  text += f''' -f "{rateDisplay}"'''
+  text += f''' -footer "@Adalbär#3333 | {ctx.prefix}{ctx.alias} rates" -thumb <image> -color <color>'''
+  return text
+
+</drac2>
